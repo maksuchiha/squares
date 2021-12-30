@@ -1,42 +1,68 @@
 'use strict'
 
-const items = [...document.querySelector('.square-body').children]
-const arr = Array.from({length: 5}, (item, index) => {
-    return Array.from({length: 5}, (v, i) => {
-        return (index + i) + (index * 4)
+let blocksList
+let objectsBlocksList
+
+
+const initBlocksList = () => {
+    blocksList = [...document.querySelector('.square-body').children]
+    return blocksList
+}
+
+const initObjectsBlocksList = () => {
+    objectsBlocksList = Array.from({length: 5}, (item, index) => {
+        return Array.from({length: 5}, (v, i) => {
+            return {
+                index: (index + i) + (index * 4),
+                block: blocksList[(index + i) + (index * 4)]
+            }
+        })
     })
+    return objectsBlocksList
+}
+
+initBlocksList()
+initObjectsBlocksList()
+
+document.querySelector('.btn-reset').addEventListener('click', () => {
+
+    let objectsBlocksListReduce = objectsBlocksList.reduce((acc, cur) => {
+        cur.map(e => acc.push(e))
+        return acc
+    }, []).sort((a, b) => a['index'] - b['index'])
+
+    const del = document.querySelector('.square-body')
+
+    del.querySelectorAll('.block').forEach((item) => {
+        item.remove()
+    })
+
+    objectsBlocksListReduce.forEach(({block}) => {
+        del.append(block)
+    })
+
+    initBlocksList()
+    initObjectsBlocksList()
 })
 
-const swapNodes = (n1, n2) => {
+
+const swapNodes = (n1, n2, i1, i2) => {
     let p1 = n1.parentNode
     let p2 = n2.parentNode
-    let i1, i2
-
-    if ( !p1 || !p2 || p1.isEqualNode(n2) || p2.isEqualNode(n1) ) return
-
-    for (let i = 0; i < p1.children.length; i++) {
-        if (p1.children[i].isEqualNode(n1)) {
-            i1 = i
-        }
-    }
-    for (let i = 0; i < p2.children.length; i++) {
-        if (p2.children[i].isEqualNode(n2)) {
-            i2 = i
-        }
-    }
 
     if ( p1.isEqualNode(p2) && i1 < i2 ) {
         i2++
     }
+
     p1.insertBefore(n2, p1.children[i1])
     p2.insertBefore(n1, p2.children[i2])
 }
 
 const directData = (index, direction) => {
     let nextPosition = []
-    const curPosition = arr.reduce((acc, crv, arrIndex) => {
+    const curPosition = objectsBlocksList.reduce((acc, crv, arrIndex) => {
         crv.forEach((item, crvIndex) => {
-            if (item === +index) {
+            if (item['index'] === +index) {
                 acc[1] = crvIndex
                 acc[0] = arrIndex
             }
@@ -77,20 +103,21 @@ const directData = (index, direction) => {
         }
     }
 
-    const curPos = document.querySelector(`[data-index='${arr[curPosition[0]][curPosition[1]]}'`)
-    const nextPos = document.querySelector(`[data-index='${arr[nextPosition[0]][nextPosition[1]]}'`)
-    const cur = arr[curPosition[0]][curPosition[1]]
-    const next = arr[nextPosition[0]][nextPosition[1]]
+    const curPos = document.querySelector(`[data-index='${Object.values(objectsBlocksList[curPosition[0]][curPosition[1]])[0]}'`)
+    const nextPos = document.querySelector(`[data-index='${Object.values(objectsBlocksList[nextPosition[0]][nextPosition[1]])[0]}'`)
 
-    swapNodes(curPos, nextPos)
+    const cur = objectsBlocksList[curPosition[0]][curPosition[1]]
+    const next = objectsBlocksList[nextPosition[0]][nextPosition[1]]
 
-    arr[nextPosition[0]][nextPosition[1]] = cur
-    arr[curPosition[0]][curPosition[1]] = next
+    swapNodes(curPos, nextPos, curPosition[0] * 5 + curPosition[1], nextPosition[0] * 5 + nextPosition[1])
+
+    objectsBlocksList[nextPosition[0]][nextPosition[1]] = cur
+    objectsBlocksList[curPosition[0]][curPosition[1]] = next
 }
 
-items.forEach((item, index) => {
-    item.setAttribute('data-index', index)
-    item.addEventListener('click', (e) => {
+blocksList.forEach((block, index) => {
+    block.setAttribute('data-index', index)
+    block.addEventListener('click', (e) => {
         const target = e.target
         const indexData = target.closest('.block').getAttribute('data-index')
 
@@ -99,11 +126,7 @@ items.forEach((item, index) => {
             const direction = cList.filter((cListItem) => cListItem !== 'arrow').toString()
             directData(indexData, direction)
         }
-
     })
 })
 
-document.querySelector('.btn-reset').addEventListener('click', () => {
-    window.location.reload()
-})
 
